@@ -1,0 +1,43 @@
+#include <stdio.h>
+#include <string.h>
+#define MAX_TEXT 2000
+void frequency_analysis(const unsigned char *text) {
+    int freq[256] = {0};
+    for (int i = 0; text[i]; i++) {
+        freq[text[i]]++;
+    }
+    printf("Symbol frequencies:\n");
+    for (int i = 0; i < 256; i++) {
+        if (freq[i] > 0 && i >= 32) {  // printable range
+            printf("'%c' (ASCII %d): %d times\n", i, i, freq[i]);
+        }
+    }
+}
+void apply_mapping(const unsigned char *text, const unsigned char map[256]) {
+    for (int i = 0; text[i]; i++) {
+        unsigned char c = text[i];
+        if (map[c]) {
+            putchar(map[c]);
+        } else {
+            putchar(c);
+        }
+    }
+    printf("\n");
+}
+int main() {
+    unsigned char text[MAX_TEXT];
+    unsigned char map[256] = {0};
+    printf("Enter ciphertext:\n");
+    fgets((char *)text, sizeof(text), stdin);
+    frequency_analysis(text);
+    // Example: after analysis you can fill map manually using ASCII codes:
+    // Suppose ASCII 182 ('¶') → 'p'
+    // Suppose ASCII 151 ('—') → 'v'
+    // Fill map with actual ASCII code of symbol you want to map
+    map[182] = 'p';
+    map[151] = 'v';
+    // etc... Fill based on actual symbol codes in your ciphertext
+    printf("\nDecrypted text:\n");
+    apply_mapping(text, map);
+    return 0;
+}
