@@ -1,0 +1,57 @@
+ #include <stdio.h>
+#include <ctype.h>
+#include <string.h>
+char m[5][5];
+void buildMatrix(char *key) {
+    int used[26] = {0}, i, j, k = 0;
+    char c;
+    for (i = 0; key[i]; i++) {
+        c = toupper(key[i]) == 'J' ? 'I' : toupper(key[i]);
+        if (isalpha(c) && !used[c - 'A']) {
+            m[k / 5][k % 5] = c; used[c - 'A'] = 1; k++;
+        }
+    }
+    for (c = 'A'; c <= 'Z'; c++) {
+        if (c == 'J') continue;
+        if (!used[c - 'A']) {
+            m[k / 5][k % 5] = c; k++;
+        }
+    }
+}
+void find(char c, int *r, int *c1) {
+    if (c == 'J') c = 'I';
+    for (int i = 0; i < 5; i++)
+        for (int j = 0; j < 5; j++)
+            if (m[i][j] == c) { *r = i; *c1 = j; return; }
+}
+void encrypt(char *p) {
+    int i, r1, c1, r2, c2;
+    for (i = 0; p[i]; i++) {
+        if (!isalpha(p[i])) continue;
+        char a = toupper(p[i]), b;
+        a = (a == 'J') ? 'I' : a;
+        if (p[i + 1] && isalpha(p[i + 1])) {
+            b = toupper(p[i + 1]);
+            b = (b == 'J') ? 'I' : b;
+            if (a == b) b = 'X';
+            else i++;
+        } else b = 'X';
+        find(a, &r1, &c1); find(b, &r2, &c2);
+        if (r1 == r2)
+            printf("%c%c", m[r1][(c1+1)%5], m[r2][(c2+1)%5]);
+        else if (c1 == c2)
+            printf("%c%c", m[(r1+1)%5][c1], m[(r2+1)%5][c2]);
+        else
+            printf("%c%c", m[r1][c2], m[r2][c1]);
+    }
+    printf("\n");
+}
+int main() {
+    char key[100], text[1000];
+    printf("Key: "); fgets(key, sizeof(key), stdin);
+    printf("Plaintext: "); fgets(text, sizeof(text), stdin);
+    buildMatrix(key);
+    encrypt(text);
+    return 0;
+}
+
