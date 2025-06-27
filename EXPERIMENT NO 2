@@ -1,0 +1,45 @@
+#include <stdio.h>
+#include <ctype.h>
+#include <string.h>
+
+#define ALPHABET_LEN 26
+
+// Encrypts the plaintext using the provided cipher alphabet
+void encryptMonoalphabetic(char text[], char cipherAlphabet[]) {
+    for (int i = 0; text[i] != '\0'; i++) {
+        char ch = text[i];
+
+        if (isupper(ch)) {
+            text[i] = toupper(cipherAlphabet[ch - 'A']);
+        }
+        else if (islower(ch)) {
+            text[i] = tolower(cipherAlphabet[ch - 'a']);
+        }
+        // Non-alphabet characters remain unchanged
+    }
+}
+
+int main() {
+    char text[1000];
+    char cipherAlphabet[ALPHABET_LEN + 1];
+
+    printf("Enter a message to encrypt: ");
+    fgets(text, sizeof(text), stdin);
+    
+    printf("Enter a 26-letter cipher alphabet (e.g., QWERTYUIOPASDFGHJKLZXCVBNM):\n");
+    scanf("%s", cipherAlphabet);
+
+    // Validate cipher alphabet length
+    if (strlen(cipherAlphabet) != ALPHABET_LEN) {
+        printf("Error: Cipher alphabet must be exactly 26 letters long.\n");
+        return 1;
+    }
+
+    // Optional: Validate uniqueness (could be added for stronger checking)
+
+    encryptMonoalphabetic(text, cipherAlphabet);
+
+    printf("Encrypted message: %s\n", text);
+
+    return 0;
+}
