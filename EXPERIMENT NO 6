@@ -1,0 +1,61 @@
+#include <stdio.h>
+#include <ctype.h>
+// Function to compute modular inverse of a under mod 26
+int modInverse(int a) {
+    a = a % 26;
+    for (int x = 1; x < 26; x++)
+        if ((a * x) % 26 == 1)
+            return x;
+    return -1;
+}
+// Function to solve (a*4 + b)%26=1 and (a*19 + b)%26=20
+void findKey(int *a, int *b) {
+    int p1 = 4, p2 = 19;
+    int c1 = 1, c2 = 20;
+
+    int a_num = (c1 - c2 + 26) % 26;
+    int p_num = (p1 - p2 + 26) % 26;
+    int p_inv = modInverse(p_num);
+
+    if (p_inv == -1) {
+        printf("No valid key found (p_num has no inverse).\n");
+        *a = -1; *b = -1;
+        return;
+    }
+    *a = (a_num * p_inv) % 26;
+    *b = (c1 - (*a * p1)) % 26;
+    if (*b < 0) *b += 26;
+}
+// Decrypt ciphertext using found a,b
+void decrypt(char text[], int a, int b) {
+    int a_inv = modInverse(a);
+    if (a_inv == -1) {
+        printf("No inverse for 'a'. Decryption impossible.\n");
+        return;
+    }
+    for (int i = 0; text[i]; i++) {
+        char c = text[i];
+        if (isalpha(c)) {
+            int C = toupper(c) - 'A';
+            int P = (a_inv * (C - b + 26)) % 26;
+            printf("%c", isupper(c) ? P + 'A' : P + 'a');
+        } else {
+            putchar(c);
+        }
+    }
+    printf("\n");
+}
+int main() {
+    char text[1000];
+    int a, b;
+    printf("Enter ciphertext: ");
+    fgets(text, sizeof(text), stdin);
+    findKey(&a, &b);
+    if (a != -1) {
+        printf("Found keys: a=%d, b=%d\n", a, b);
+        printf("Decrypted text: ");
+        decrypt(text, a, b);
+    }
+
+    return 0;
+}
