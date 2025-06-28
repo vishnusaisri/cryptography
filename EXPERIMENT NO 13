@@ -1,0 +1,65 @@
+ #include <stdio.h>
+#include <stdlib.h>
+// Mod 26 inverse for 2x2 matrix
+int modInverse(int a, int m) {
+    a = a % m;
+    for (int x = 1; x < m; x++) {
+        if ((a * x) % m == 1)
+            return x;
+    }
+    return -1;
+}
+// Compute inverse matrix mod 26
+void inverse2x2(int m[2][2], int inv[2][2]) {
+    int det = (m[0][0]*m[1][1] - m[0][1]*m[1][0]) % 26;
+    if (det < 0) det += 26;
+    int invDet = modInverse(det, 26);
+    if (invDet == -1) {
+        printf("Matrix not invertible mod 26.\n");
+        exit(1);
+    }
+}
+    inv[0][0] =  m[1][1] * invDet % 26;
+    inv[0][1] = -m[0][1] * invDet % 26;
+    inv[1][0] = -m[1][0] * invDet % 26;
+    inv[1][1] =  m[0][0] * invDet % 26;
+
+    for (int i=0; i<2; i++)
+        for (int j=0; j<2; j++) {
+            if (inv[i][j] < 0) inv[i][j] += 26;
+        }
+}
+void multiply2x2(int a[2][2], int b[2][2], int result[2][2]) {
+    for (int i=0; i<2; i++)
+        for (int j=0; j<2; j++)
+            result[i][j] = (a[i][0]*b[0][j] + a[i][1]*b[1][j]) % 26;
+}
+void printMatrix(int m[2][2]) {
+    for (int i=0; i<2; i++) {
+        for (int j=0; j<2; j++)
+            printf("%2d ", m[i][j]);
+        printf("\n");
+    }
+}
+int main() {
+    // Example known plaintext matrix (each column is a pair)
+    // Plain: HE LP → H=7,E=4,L=11,P=15
+    int P[2][2] = { {7, 11},
+                    {4, 15} };
+    // Example corresponding ciphertext matrix
+    // Ciphertext for HE LP
+    int C[2][2] = { {17, 8},
+                    {3, 22} };
+    int P_inv[2][2], K[2][2];
+    printf("Plaintext matrix:\n");
+    printMatrix(P);
+    printf("Ciphertext matrix:\n");
+    printMatrix(C);
+    inverse2x2(P, P_inv);
+    printf("Inverse of plaintext matrix mod 26:\n");
+    printMatrix(P_inv);
+    multiply2x2(C, P_inv, K);
+    printf("Recovered key matrix mod 26:\n");
+    printMatrix(K);
+    return 0;
+}
