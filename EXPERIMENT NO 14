@@ -1,0 +1,45 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+#include <time.h>
+#define MAX_LEN 100
+void generateKey(int key[], int len) {
+    for (int i = 0; i < len; i++) {
+        key[i] = rand() % 26;  // 0-25 shift
+    }
+}
+void encrypt(char plaintext[], int key[], char ciphertext[]) {
+    for (int i = 0; i < strlen(plaintext); i++) {
+        if (isalpha(plaintext[i])) {
+            char base = isupper(plaintext[i]) ? 'A' : 'a';
+            ciphertext[i] = ( (plaintext[i] - base + key[i]) % 26 ) + base;
+        } else {
+            ciphertext[i] = plaintext[i];  // keep non-alpha as is
+        }
+    }
+    ciphertext[strlen(plaintext)] = '\0';
+}
+int main() {
+    char plaintext[MAX_LEN];
+    char ciphertext[MAX_LEN];
+    int key[MAX_LEN];
+    srand(time(NULL));  // seed random
+    printf("Enter plaintext: ");
+    fgets(plaintext, MAX_LEN, stdin);
+    plaintext[strcspn(plaintext, "\n")] = 0;  // remove newline
+    int len = strlen(plaintext);
+    generateKey(key, len);
+    encrypt(plaintext, key, ciphertext);
+    printf("\nPlaintext : %s\n", plaintext);
+    printf("Key stream: ");
+    for (int i = 0; i < len; i++) {
+        if (isalpha(plaintext[i]))
+            printf("%2d ", key[i]);
+        else
+            printf("   ");
+    }
+    printf("\n");
+    printf("Ciphertext: %s\n", ciphertext);
+    return 0;
+}
