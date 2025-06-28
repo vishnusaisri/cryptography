@@ -1,0 +1,41 @@
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+#define MOD 26
+// Key matrix
+int key[2][2] = { {9, 4}, {5, 7} };
+// Function to preprocess: remove spaces, make lowercase
+void preprocess(char *input, char *output) {
+    int len = 0;
+    for (int i = 0; input[i]; i++) {
+        if (isalpha(input[i])) {
+            output[len++] = tolower(input[i]);
+        }
+    }
+    if (len % 2 != 0) {
+        output[len++] = 'x';  // pad if odd length
+    }
+    output[len] = '\0';
+}
+// Function to encrypt pair
+void encryptPair(char a, char b) {
+    int p1 = a - 'a';
+    int p2 = b - 'a';
+
+    int c1 = (key[0][0] * p1 + key[0][1] * p2) % MOD;
+    int c2 = (key[1][0] * p1 + key[1][1] * p2) % MOD;
+
+    printf("%c%c", c1 + 'a', c2 + 'a');
+}
+int main() {
+    char plaintext[] = "meet me at the usual place at ten rather than eight oclock";
+    char processed[200];
+    preprocess(plaintext, processed);
+    printf("Processed plaintext: %s\n", processed);
+    printf("Ciphertext: ");
+    for (int i = 0; i < strlen(processed); i += 2) {
+        encryptPair(processed[i], processed[i+1]);
+    }
+    printf("\n");
+    return 0;
+}
