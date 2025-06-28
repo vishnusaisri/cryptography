@@ -1,0 +1,76 @@
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+#define SIZE 5
+// Provided Playfair matrix
+char matrix[SIZE][SIZE] = {
+    {'M', 'F', 'H', 'I', 'K'},
+    {'U', 'N', 'O', 'P', 'Q'},
+    {'Z', 'V', 'W', 'X', 'Y'},
+    {'E', 'L', 'A', 'R', 'G'},
+    {'D', 'S', 'T', 'B', 'C'}
+};
+// Find position of a character
+void findPosition(char ch, int *row, int *col) {
+    if (ch == 'J') ch = 'I';
+    for (int i = 0; i < SIZE; i++)
+        for (int j = 0; j < SIZE; j++)
+            if (matrix[i][j] == ch) {
+                *row = i;
+                *col = j;
+                return;
+            }
+}
+// Preprocess: remove spaces, convert to uppercase, handle duplicate letters
+void preprocess(char *input, char *output) {
+    int len = 0;
+    for (int i = 0; input[i]; i++) {
+        if (isalpha(input[i])) {
+            output[len++] = toupper(input[i] == 'J' ? 'I' : input[i]);
+        }
+    }
+    output[len] = '\0';
+    // Insert 'X' between duplicate pairs
+    char temp[200];
+    int tlen = 0;
+    for (int i = 0; i < len; i++) {
+        temp[tlen++] = output[i];
+        if (i + 1 < len && output[i] == output[i + 1]) {
+            temp[tlen++] = 'X';
+        }
+    }
+    // Make sure length is even
+    if (tlen % 2 != 0) {
+        temp[tlen++] = 'X';
+    }
+    temp[tlen] = '\0';
+    strcpy(output, temp);
+}
+// Encrypt a pair
+void encryptPair(char a, char b) {
+    int row1, col1, row2, col2;
+    findPosition(a, &row1, &col1);
+    findPosition(b, &row2, &col2);
+    if (row1 == row2) {
+        // Same row: move right
+        printf("%c%c", matrix[row1][(col1 + 1) % SIZE], matrix[row2][(col2 + 1) % SIZE]);
+    } else if (col1 == col2) {
+        // Same column: move down
+        printf("%c%c", matrix[(row1 + 1) % SIZE][col1], matrix[(row2 + 1) % SIZE][col2]);
+    } else {
+        // Rectangle swap columns
+        printf("%c%c", matrix[row1][col2], matrix[row2][col1]);
+    }
+}
+int main() {
+    char plaintext[] = "Must see you over Cadogan West. Coming at once.";
+    char processed[200];
+    preprocess(plaintext, processed);
+    printf("Processed plaintext: %s\n", processed);
+    printf("Ciphertext: ");
+    for (int i = 0; i < strlen(processed); i += 2) {
+        encryptPair(processed[i], processed[i + 1]);
+    }
+    printf("\n");
+    return 0;
+}
