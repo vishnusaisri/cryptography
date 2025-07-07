@@ -1,0 +1,101 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <ctype.h>
+#include <string.h>
+
+// Standard English letter frequency order (from most common to least)
+const char english_freq[] = "ETAOINSHRDLCUMWFGYPBVKJXQZ";
+
+// Structure to hold letter and its frequency
+typedef struct {
+    char letter;
+    int count;
+} LetterFreq;
+
+// Compare function for qsort: sort by count descending
+int cmp_freq(const void *a, const void *b) {
+    LetterFreq *fa = (LetterFreq *)a;
+    LetterFreq *fb = (LetterFreq *)b;
+    return fb->count - fa->count;
+}
+
+// Function to compute frequency
+void compute_frequency(const char *text, LetterFreq freq[26]) {
+    for (int i = 0; i < 26; i++) {
+        freq[i].letter = 'A' + i;
+        freq[i].count = 0;
+    }
+
+    for (int i = 0; text[i] != '\0'; i++) {
+        if (isalpha(text[i])) {
+            char upper = toupper(text[i]);
+            freq[upper - 'A'].count++;
+        }
+    }
+}
+
+// Function to build mapping based on frequency
+void build_mapping(LetterFreq freq[26], char map[26]) {
+    for (int i = 0; i < 26; i++) {
+        map[freq[i].letter - 'A'] = english_freq[i];
+    }
+}
+
+// Function to apply mapping
+void apply_mapping(const char *ciphertext, char *plaintext, char map[26]) {
+    for (int i = 0; ciphertext[i] != '\0'; i++) {
+        if (isalpha(ciphertext[i])) {
+            char upper = toupper(ciphertext[i]);
+            char mapped = map[upper - 'A'];
+
+            // Preserve case
+            if (isupper(ciphertext[i])) {
+                plaintext[i] = mapped;
+            } else {
+                plaintext[i] = tolower(mapped);
+            }
+        } else {
+            plaintext[i] = ciphertext[i];
+        }
+    }
+    plaintext[strlen(ciphertext)] = '\0';
+}
+
+int main() {
+    char ciphertext[5000];
+    int topN;
+
+    printf("Enter ciphertext:\n");
+    fgets(ciphertext, sizeof(ciphertext), stdin);
+
+    // Remove newline
+    ciphertext[strcspn(ciphertext, "\n")] = '\0';
+
+    printf("How many top guesses would you like? ");
+    scanf("%d", &topN);
+
+    // Compute frequency
+    LetterFreq freq[26];
+    compute_frequency(ciphertext, freq);
+
+    // Sort by frequency
+    qsort(freq, 26, sizeof(LetterFreq), cmp_freq);
+
+    // Generate guesses
+    for (int guess = 0; guess < topN; guess++) {
+        char map[26];
+        build_mapping(freq, map);
+
+        // Rotate mapping for rough variations
+        for (int i = 0; i < 26; i++) {
+            map[freq[i].letter - 'A'] = english_freq[(i + guess) % 26];
+        }
+
+        char plaintext[5000];
+        apply_mapping(ciphertext, plaintext, map);
+
+        printf("\nGuess #%d:\n%s\n", guess + 1, plaintext);
+    }
+
+    return 0;
+}
