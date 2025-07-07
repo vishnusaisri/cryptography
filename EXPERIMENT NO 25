@@ -1,0 +1,68 @@
+#include <stdio.h>
+
+// Compute GCD using Euclidean algorithm
+int gcd(int a, int b) {
+    while (b != 0) {
+        int t = b;
+        b = a % b;
+        a = t;
+    }
+    return a;
+}
+
+// Extended Euclidean Algorithm
+int extended_gcd(int a, int b, int *x, int *y) {
+    if (a == 0) {
+        *x = 0;
+        *y = 1;
+        return b;
+    }
+    int x1, y1;
+    int gcd = extended_gcd(b % a, a, &x1, &y1);
+
+    *x = y1 - (b / a) * x1;
+    *y = x1;
+    return gcd;
+}
+
+// Compute modular inverse
+int mod_inverse(int e, int phi) {
+    int x, y;
+    int g = extended_gcd(e, phi, &x, &y);
+    if (g != 1) return -1;
+    return (x % phi + phi) % phi;
+}
+
+int main() {
+    int n, e, m;
+    printf("Enter n (modulus): ");
+    scanf("%d", &n);
+    printf("Enter e (public exponent): ");
+    scanf("%d", &e);
+    printf("Enter plaintext block m: ");
+    scanf("%d", &m);
+
+    int g = gcd(m, n);
+    printf("GCD of m and n = %d\n", g);
+
+    if (g == 1) {
+        printf("No common factor. Cannot factor n this way.\n");
+    } else {
+        printf("Found common factor! One of the primes is %d\n", g);
+        int p = g;
+        int q = n / p;
+        printf("Factors of n: p = %d, q = %d\n", p, q);
+
+        int phi = (p - 1) * (q - 1);
+        printf("Computed phi(n): %d\n", phi);
+
+        int d = mod_inverse(e, phi);
+        if (d == -1) {
+            printf("No multiplicative inverse found for e mod phi(n)\n");
+        } else {
+            printf("Recovered private key d = %d\n", d);
+        }
+    }
+
+    return 0;
+}
