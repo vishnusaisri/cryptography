@@ -1,0 +1,87 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+
+// Standard English letter frequency (most to least common)
+const char english_order[] = "ETAOINSHRDLCUMWFGYPBVKJXQZ";
+
+typedef struct {
+    char letter;
+    int count;
+} LetterFreq;
+
+// Compare function for sorting by count (descending)
+int cmp_freq(const void *a, const void *b) {
+    LetterFreq *fa = (LetterFreq *)a;
+    LetterFreq *fb = (LetterFreq *)b;
+    return fb->count - fa->count;
+}
+
+// Count letter frequencies in ciphertext
+void compute_freq(const char *cipher, LetterFreq freq[26]) {
+    for (int i = 0; i < 26; i++) {
+        freq[i].letter = 'A' + i;
+        freq[i].count = 0;
+    }
+    for (int i = 0; cipher[i] != '\0'; i++) {
+        if (isalpha(cipher[i])) {
+            freq[toupper(cipher[i]) - 'A'].count++;
+        }
+    }
+}
+
+// Build mapping based on frequency
+void build_mapping(LetterFreq freq[26], char map[26], int shift) {
+    for (int i = 0; i < 26; i++) {
+        map[freq[i].letter - 'A'] = english_order[(i + shift) % 26];
+    }
+}
+
+// Apply mapping to ciphertext
+void apply_mapping(const char *cipher, char *plain, char map[26]) {
+    for (int i = 0; cipher[i] != '\0'; i++) {
+        if (isalpha(cipher[i])) {
+            char c = toupper(cipher[i]);
+            char sub = map[c - 'A'];
+            // Preserve case
+            if (isupper(cipher[i]))
+                plain[i] = sub;
+            else
+                plain[i] = tolower(sub);
+        } else {
+            plain[i] = cipher[i];
+        }
+    }
+    plain[strlen(cipher)] = '\0';
+}
+
+int main() {
+    char cipher[5000];
+    int topN;
+
+    printf("Enter ciphertext:\n");
+    fgets(cipher, sizeof(cipher), stdin);
+    cipher[strcspn(cipher, "\n")] = '\0';  // Remove newline
+
+    printf("How many top guesses would you like? ");
+    scanf("%d", &topN);
+
+    LetterFreq freq[26];
+    compute_freq(cipher, freq);
+
+    // Sort by frequency descending
+    qsort(freq, 26, sizeof(LetterFreq), cmp_freq);
+
+    for (int i = 0; i < topN; i++) {
+        char map[26];
+        build_mapping(freq, map, i);  // Shift mapping for variation
+
+        char plain[5000];
+        apply_mapping(cipher, plain, map);
+
+        printf("\nGuess #%d (shift = %d):\n%s\n", i + 1, i, plain);
+    }
+
+    return 0;
+}
