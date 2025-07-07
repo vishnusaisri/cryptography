@@ -1,0 +1,107 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+// Shift schedule (for both encryption & decryption; for decryption keys are used in reverse)
+int shift_schedule[16] = {
+    1, 1, 2, 2,
+    2, 2, 2, 2,
+    1, 2, 2, 2,
+    2, 2, 2, 1
+};
+
+// Example PC1 and PC2 (in reality these are fixed DES tables; simplified for demo)
+int PC1[56] = { /* Populate with actual PC1 permutation values */ };
+int PC2[48] = { /* Populate with actual PC2 permutation values */ };
+
+// Functions to left shift a 28-bit half
+void left_shift(int *half, int n) {
+    int temp[28];
+    memcpy(temp, half, n * sizeof(int));
+    memmove(half, half + n, (28 - n) * sizeof(int));
+    memcpy(half + (28 - n), temp, n * sizeof(int));
+}
+
+// Generate 16 subkeys
+void generate_subkeys(int *key64, int subkeys[16][48]) {
+    int key56[56];
+    int C[28], D[28];
+
+    // Apply PC1 (skip parity bits)
+    // (Populate key56 using PC1 table)
+    for (int i = 0; i < 56; i++) {
+        key56[i] = key64[PC1[i] - 1];
+    }
+
+    // Split into C and D
+    memcpy(C, key56, 28 * sizeof(int));
+    memcpy(D, key56 + 28, 28 * sizeof(int));
+
+    // Generate subkeys
+    for (int round = 0; round < 16; round++) {
+        left_shift(C, shift_schedule[round]);
+        left_shift(D, shift_schedule[round]);
+
+        int CD[56];
+        memcpy(CD, C, 28 * sizeof(int));
+        memcpy(CD + 28, D, 28 * sizeof(int));
+
+        for (int i = 0; i < 48; i++) {
+            subkeys[round][i] = CD[PC2[i] - 1];
+        }
+    }
+}
+
+// Example Feistel function placeholder
+void feistel(int *R, int *subkey, int *output) {
+    // Normally expand R to 48 bits, XOR with subkey, apply S-boxes, permute...
+    // Here: just a placeholder that copies R (for structure demo)
+    memcpy(output, R, 32 * sizeof(int));
+}
+
+// DES decryption
+void des_decrypt(int *ciphertext, int *key64, int *plaintext) {
+    int subkeys[16][48];
+    generate_subkeys(key64, subkeys);
+
+    int L[32], R[32], tempR[32];
+    memcpy(L, ciphertext, 32 * sizeof(int));
+    memcpy(R, ciphertext + 32, 32 * sizeof(int));
+
+    for (int round = 15; round >= 0; round--) {
+        memcpy(tempR, R, 32 * sizeof(int));
+        int f_out[32];
+        feistel(R, subkeys[round], f_out);
+
+        for (int i = 0; i < 32; i++) {
+            R[i] = L[i] ^ f_out[i];
+        }
+        memcpy(L, tempR, 32 * sizeof(int));
+    }
+
+    // Combine R and L (note: no final swap for decryption)
+    memcpy(plaintext, R, 32 * sizeof(int));
+    memcpy(plaintext + 32, L, 32 * sizeof(int));
+}
+
+void print_bits(const int *bits, int len) {
+    for (int i = 0; i < len; i++) {
+        printf("%d", bits[i]);
+        if ((i + 1) % 8 == 0) printf(" ");
+    }
+    printf("\n");
+}
+
+int main() {
+    // Example 64-bit key and ciphertext (for demo, normally you'd input these)
+    int key64[64] = { /* 64-bit key as bits (with parity bits) */ };
+    int ciphertext[64] = { /* 64-bit ciphertext block as bits */ };
+    int plaintext[64];
+
+    des_decrypt(ciphertext, key64, plaintext);
+
+    printf("Decrypted plaintext bits:\n");
+    print_bits(plaintext, 64);
+
+    return 0;
+}
