@@ -1,0 +1,85 @@
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <openssl/evp.h>
+
+void handle_errors(const char *msg) {
+    fprintf(stderr, "Error: %s\n", msg);
+    exit(1);
+}
+
+void print_hex(const char *label, unsigned char *data, int len) {
+    printf("%s: ", label);
+    for (int i = 0; i < len; i++)
+        printf("%02X ", data[i]);
+    printf("\n");
+}
+
+void encrypt_decrypt(const EVP_CIPHER *cipher, const char *mode_name,
+                     unsigned char *plaintext, int plaintext_len,
+                     unsigned char *key, unsigned char *iv) {
+    EVP_CIPHER_CTX *ctx;
+    unsigned char ciphertext[128] = {0};
+    unsigned char decrypted[128] = {0};
+    int len = 0, ciphertext_len = 0, decrypted_len = 0;
+
+    // ENCRYPT
+    ctx = EVP_CIPHER_CTX_new();
+    if (!ctx) handle_errors("Encrypt context creation failed");
+    if (1 != EVP_EncryptInit_ex(ctx, cipher, NULL, key, iv))
+        handle_errors("Encrypt init failed");
+    if (1 != EVP_EncryptUpdate(ctx, ciphertext, &len, plaintext, plaintext_len))
+        handle_errors("Encrypt update failed");
+    ciphertext_len = len;
+    if (1 != EVP_EncryptFinal_ex(ctx, ciphertext + len, &len))
+        handle_errors("Encrypt final failed");
+    ciphertext_len += len;
+    EVP_CIPHER_CTX_free(ctx);
+
+    print_hex(mode_name, ciphertext, ciphertext_len);
+
+    // DECRYPT
+    ctx = EVP_CIPHER_CTX_new();
+    if (!ctx) handle_errors("Decrypt context creation failed");
+    if (1 != EVP_DecryptInit_ex(ctx, cipher, NULL, key, iv))
+        handle_errors("Decrypt init failed");
+    if (1 != EVP_DecryptUpdate(ctx, decrypted, &len, ciphertext, ciphertext_len))
+        handle_errors("Decrypt update failed");
+    decrypted_len = len;
+    if (1 != EVP_DecryptFinal_ex(ctx, decrypted + len, &len))
+        handle_errors("Decrypt final failed");
+    decrypted_len += len;
+    EVP_CIPHER_CTX_free(ctx);
+
+    printf("%s Decrypted: ", mode_name);
+    for (int i = 0; i < decrypted_len; i++)
+        printf("%c", decrypted[i]);
+    printf("\n\n");
+}
+
+void pad_message(unsigned char *msg, int *len) {
+    int block_size = 8; // DES block size
+    int pad_needed = block_size - (*len % block_size);
+    if (pad_needed == 0) pad_needed = block_size;  // Always pad
+    msg[*len] = 0x80;  // 10000000
+    memset(msg + *len + 1, 0, pad_needed - 1);
+    *len += pad_needed;
+}
+
+int main() {
+    unsigned char key[8] = {0x13,0x34,0x57,0x79,0x9B,0xBC,0xDF,0xF1};
+    unsigned char iv[8]  = {0x01,0x23,0x45,0x67,0x89,0xAB,0xCD,0xEF};
+    unsigned char msg[128] = "HELLO ECB CBC CFB TEST";
+    int len = strlen((char *)msg);
+
+    printf("Original: %s\n", msg);
+
+    pad_message(msg, &len);
+    printf("Padded length: %d bytes\n\n", len);
+
+    encrypt_decrypt(EVP_des_ecb(), "ECB", msg, len, key, NULL);
+    encrypt_decrypt(EVP_des_cbc(), "CBC", msg, len, key, iv);
+    encrypt_decrypt(EVP_des_cfb(), "CFB", msg, len, key, iv);
+
+    return 0;
+}
