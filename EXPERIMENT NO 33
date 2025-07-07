@@ -1,0 +1,38 @@
+#include <stdio.h>
+#include <stdint.h>
+
+// Sample DES S-Boxes and functions would go here
+// Full DES needs 16 rounds, initial and final permutations, key schedule, etc.
+// For simplicity, we'll mock the DES encrypt/decrypt process
+
+void des_encrypt_block(uint64_t plaintext, uint64_t key, uint64_t *ciphertext) {
+    // Mock encryption: just XOR with key (for illustration only)
+    *ciphertext = plaintext ^ key;
+}
+
+void des_decrypt_block(uint64_t ciphertext, uint64_t key, uint64_t *plaintext) {
+    // Mock decryption: XOR again to recover
+    *plaintext = ciphertext ^ key;
+}
+
+void print64(const char *label, uint64_t value) {
+    printf("%s: 0x%016llX\n", label, (unsigned long long)value);
+}
+
+int main() {
+    uint64_t plaintext = 0x0123456789ABCDEF;  // 64-bit plaintext
+    uint64_t key = 0x133457799BBCDFF1;        // 56-bit DES key (in 64-bit container)
+
+    uint64_t ciphertext = 0;
+    uint64_t decrypted = 0;
+
+    print64("Plaintext ", plaintext);
+
+    des_encrypt_block(plaintext, key, &ciphertext);
+    print64("Ciphertext", ciphertext);
+
+    des_decrypt_block(ciphertext, key, &decrypted);
+    print64("Decrypted ", decrypted);
+
+    return 0;
+}
