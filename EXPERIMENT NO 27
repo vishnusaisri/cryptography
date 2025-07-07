@@ -1,0 +1,53 @@
+#include <stdio.h>
+#include <stdint.h>
+
+// Compute (base^exp) % mod using modular exponentiation
+uint64_t mod_exp(uint64_t base, uint64_t exp, uint64_t mod) {
+    uint64_t result = 1;
+    base = base % mod;
+    while (exp > 0) {
+        if (exp % 2 == 1) {
+            result = (result * base) % mod;
+        }
+        exp = exp / 2;
+        base = (base * base) % mod;
+    }
+    return result;
+}
+
+int main() {
+    uint64_t n, e;
+    printf("Enter RSA modulus n: ");
+    scanf("%llu", &n);
+    printf("Enter RSA public exponent e: ");
+    scanf("%llu", &e);
+
+    // Precompute ciphertexts for m = 0..25
+    uint64_t table[26];
+    printf("\nPrecomputing ciphertexts for m = 0..25...\n");
+    for (int m = 0; m < 26; m++) {
+        table[m] = mod_exp(m, e, n);
+        printf("m = %2d => c = %llu\n", m, table[m]);
+    }
+
+    // Simulate intercepted ciphertext
+    uint64_t c;
+    printf("\nEnter intercepted ciphertext: ");
+    scanf("%llu", &c);
+
+    // Attack: lookup ciphertext
+    int found = 0;
+    for (int m = 0; m < 26; m++) {
+        if (table[m] == c) {
+            printf("Recovered plaintext: %d (letter %c)\n", m, 'A' + m);
+            found = 1;
+            break;
+        }
+    }
+
+    if (!found) {
+        printf("Ciphertext not found in precomputed table. Are you sure it's valid?\n");
+    }
+
+    return 0;
+}
