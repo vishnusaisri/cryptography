@@ -1,0 +1,90 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define NUM_ROUNDS 16
+
+// Shift schedule (standard DES)
+int shift_schedule[NUM_ROUNDS] = {
+    1, 1, 2, 2,
+    2, 2, 2, 2,
+    1, 2, 2, 2,
+    2, 2, 2, 1
+};
+
+// Perform circular left shift on 28-bit half
+void left_shift(int *half, int shifts) {
+    int temp[28];
+    memcpy(temp, half, shifts * sizeof(int));
+    memmove(half, half + shifts, (28 - shifts) * sizeof(int));
+    memcpy(half + (28 - shifts), temp, shifts * sizeof(int));
+}
+
+// Generate 16 subkeys: each subkey = 24 bits from C + 24 bits from D
+void generate_subkeys(int *key64, int subkeys[NUM_ROUNDS][48]) {
+    int key56[56]; // 56 bits without parity
+    int C[28], D[28];
+
+    // Strip parity bits (simple example: drop every 8th bit)
+    int j = 0;
+    for (int i = 0; i < 64; i++) {
+        if ((i + 1) % 8 != 0) {
+            key56[j++] = key64[i];
+        }
+    }
+
+    // Split into C and D
+    memcpy(C, key56, 28 * sizeof(int));
+    memcpy(D, key56 + 28, 28 * sizeof(int));
+
+    // Generate subkeys
+    for (int round = 0; round < NUM_ROUNDS; round++) {
+        // Left shift C and D
+        left_shift(C, shift_schedule[round]);
+        left_shift(D, shift_schedule[round]);
+
+        // Create subkey: 24 bits from C + 24 bits from D
+        for (int i = 0; i < 24; i++) {
+            subkeys[round][i] = C[i];
+        }
+        for (int i = 0; i < 24; i++) {
+            subkeys[round][24 + i] = D[i];
+        }
+    }
+}
+
+// Utility to print bits
+void print_bits(const int *bits, int len) {
+    for (int i = 0; i < len; i++) {
+        printf("%d", bits[i]);
+        if ((i + 1) % 8 == 0) printf(" ");
+    }
+    printf("\n");
+}
+
+int main() {
+    // Example 64-bit key (including parity bits)
+    int key64[64] = {
+        0,0,1,0,1,1,0,1,  // 1st byte
+        1,1,0,1,0,1,1,0,  // 2nd byte
+        1,0,1,0,1,0,0,1,  // 3rd byte
+        0,1,1,1,0,1,1,0,  // 4th byte
+        1,1,0,0,1,1,1,1,  // 5th byte
+        0,0,1,1,1,0,1,0,  // 6th byte
+        1,0,0,1,0,1,1,1,  // 7th byte
+        0,1,1,0,1,0,0,1   // 8th byte
+    };
+
+    int subkeys[NUM_ROUNDS][48];
+
+    generate_subkeys(key64, subkeys);
+
+    // Output subkeys
+    printf("Generated subkeys (24 C + 24 D bits):\n");
+    for (int round = 0; round < NUM_ROUNDS; round++) {
+        printf("Round %2d: ", round + 1);
+        print_bits(subkeys[round], 48);
+    }
+
+    return 0;
+}
