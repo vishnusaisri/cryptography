@@ -1,0 +1,67 @@
+#include <stdio.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <time.h>
+
+#define LANE_BITS 64
+#define NUM_LANES 25
+#define RATE_BITS 1024
+#define CAPACITY_BITS 576
+#define RATE_LANES (RATE_BITS / LANE_BITS)
+#define CAPACITY_LANES (CAPACITY_BITS / LANE_BITS)
+
+int main() {
+    uint64_t state[NUM_LANES] = {0}; // 25 lanes
+    int capacity_start = RATE_LANES; // lanes 16 to 24 are capacity
+    int blocks = 0;
+    int done = 0;
+
+    srand(time(NULL)); // randomize bits
+
+    printf("SHA-3 with 1024-bit block size (rate 1024, capacity 576)\n");
+    printf("Initial state: capacity lanes zero, rate lanes nonzero\n");
+
+    // Initialize rate lanes to nonzero (simulate at least 1 bit set)
+    for (int i = 0; i < RATE_LANES; i++) {
+        state[i] = ((uint64_t)rand() << 32) | rand();
+        if (state[i] == 0) state[i] = 1; // ensure nonzero
+    }
+
+    // Capacity lanes start zero
+    for (int i = capacity_start; i < NUM_LANES; i++) {
+        state[i] = 0;
+    }
+
+    // Loop: absorb blocks until all capacity lanes nonzero
+    while (!done) {
+        blocks++;
+        // absorb a block: xor random message block into rate part
+        for (int i = 0; i < RATE_LANES; i++) {
+            uint64_t msg = ((uint64_t)rand() << 32) | rand();
+            state[i] ^= msg;
+        }
+
+        // simulate diffusion: random chance capacity lanes gain bits
+        for (int i = capacity_start; i < NUM_LANES; i++) {
+            // Random chance bits get into capacity lane (fake diffusion since no permutation)
+            if (state[i] == 0) {
+                if (rand() % 2 == 0) { // 50% chance per block
+                    state[i] = 1ULL << (rand() % 64); // random bit
+                }
+            }
+        }
+
+        // Check if all capacity lanes are nonzero
+        done = 1;
+        for (int i = capacity_start; i < NUM_LANES; i++) {
+            if (state[i] == 0) {
+                done = 0;
+                break;
+            }
+        }
+    }
+
+    printf("All capacity lanes have at least one nonzero bit after %d block(s).\n", blocks);
+
+    return 0;
+}
