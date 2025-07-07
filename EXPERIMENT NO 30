@@ -1,0 +1,55 @@
+#include <stdio.h>
+#include <stdint.h>
+
+#define BLOCK_SIZE 8  // 64-bit block (8 bytes)
+
+// Fake block cipher: simple XOR with key for illustration
+void block_cipher_encrypt(uint8_t block[BLOCK_SIZE], uint8_t key[BLOCK_SIZE], uint8_t out[BLOCK_SIZE]) {
+    for (int i = 0; i < BLOCK_SIZE; i++) {
+        out[i] = block[i] ^ key[i];
+    }
+}
+
+// XOR two blocks
+void xor_blocks(uint8_t a[BLOCK_SIZE], uint8_t b[BLOCK_SIZE], uint8_t out[BLOCK_SIZE]) {
+    for (int i = 0; i < BLOCK_SIZE; i++) {
+        out[i] = a[i] ^ b[i];
+    }
+}
+
+// Print block
+void print_block(const char *label, uint8_t block[BLOCK_SIZE]) {
+    printf("%s: ", label);
+    for (int i = 0; i < BLOCK_SIZE; i++) {
+        printf("%02X ", block[i]);
+    }
+    printf("\n");
+}
+
+int main() {
+    // Example key and message
+    uint8_t K[BLOCK_SIZE] = {0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70, 0x80};
+    uint8_t X[BLOCK_SIZE] = {0xAA, 0xBB, 0xCC, 0xDD, 0x11, 0x22, 0x33, 0x44};
+    uint8_t T[BLOCK_SIZE];
+
+    // Compute MAC(K, X)
+    block_cipher_encrypt(X, K, T);
+    print_block("T = MAC(K, X)", T);
+
+    // Adversary constructs second block: X2 = X ⊕ T
+    uint8_t X2[BLOCK_SIZE];
+    xor_blocks(X, T, X2);
+    print_block("X2 = X ⊕ T", X2);
+
+    // Compute MAC(K, X || X2)
+    uint8_t C1[BLOCK_SIZE], C2[BLOCK_SIZE];
+    block_cipher_encrypt(X, K, C1);
+    xor_blocks(C1, X2, C2);
+    block_cipher_encrypt(C2, K, C2);
+
+    print_block("MAC(K, X || X2)", C2);
+
+    printf("\nNotice: MAC(K, X || X2) = T (forgery succeeded!)\n");
+
+    return 0;
+}
