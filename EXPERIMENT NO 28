@@ -1,0 +1,54 @@
+#include <stdio.h>
+#include <stdint.h>
+
+// Modular exponentiation: (base^exp) mod mod
+uint64_t mod_exp(uint64_t base, uint64_t exp, uint64_t mod) {
+    uint64_t result = 1;
+    base = base % mod;
+    while (exp > 0) {
+        if (exp % 2 == 1)
+            result = (result * base) % mod;
+        exp = exp >> 1;
+        base = (base * base) % mod;
+    }
+    return result;
+}
+
+int main() {
+    uint64_t q, a;
+    printf("Enter prime modulus q: ");
+    scanf("%llu", &q);
+    printf("Enter primitive root a: ");
+    scanf("%llu", &a);
+
+    uint64_t xA, xB;
+    printf("Enter Alice's secret xA: ");
+    scanf("%llu", &xA);
+    printf("Enter Bob's secret xB: ");
+    scanf("%llu", &xB);
+
+    // Standard Diffie-Hellman exchange
+    uint64_t yA = mod_exp(a, xA, q);
+    uint64_t yB = mod_exp(a, xB, q);
+
+    printf("\nAlice sends yA = %llu\n", yA);
+    printf("Bob sends yB = %llu\n", yB);
+
+    uint64_t kA = mod_exp(yB, xA, q);
+    uint64_t kB = mod_exp(yA, xB, q);
+
+    printf("Alice computes shared key: %llu\n", kA);
+    printf("Bob computes shared key: %llu\n", kB);
+
+    // Simulate bad protocol
+    uint64_t badA = mod_exp(xA, a, q);
+    uint64_t badB = mod_exp(xB, a, q);
+
+    printf("\nIf Alice sends xA^a mod q: %llu\n", badA);
+    printf("If Bob sends xB^a mod q: %llu\n", badB);
+
+    printf("\nWARNING: Using xA^a or xB^a destroys Diffie-Hellman security!\n");
+    printf("Eve could try small xA, xB guesses or compute roots easily.\n");
+
+    return 0;
+}
