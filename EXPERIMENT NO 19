@@ -1,0 +1,63 @@
+#include <stdio.h>
+#include <string.h>
+
+#define BLOCK_SIZE 8  // 64-bit block (8 bytes)
+
+// Mock DES encryption: For demo, just XORs block with key
+void des_encrypt_block(unsigned char *block, unsigned char *key, unsigned char *out) {
+    for (int i = 0; i < BLOCK_SIZE; i++) {
+        out[i] = block[i] ^ key[i];
+    }
+}
+
+// 3DES CBC encryption
+void triple_des_cbc_encrypt(unsigned char *plaintext, int length, 
+                            unsigned char *key1, unsigned char *key2, unsigned char *key3,
+                            unsigned char *iv, unsigned char *ciphertext) {
+    unsigned char prev_block[BLOCK_SIZE];
+    memcpy(prev_block, iv, BLOCK_SIZE);
+
+    for (int i = 0; i < length; i += BLOCK_SIZE) {
+        unsigned char input_block[BLOCK_SIZE];
+        unsigned char temp1[BLOCK_SIZE], temp2[BLOCK_SIZE];
+
+        // XOR with previous ciphertext (or IV)
+        for (int j = 0; j < BLOCK_SIZE; j++) {
+            input_block[j] = plaintext[i + j] ^ prev_block[j];
+        }
+
+        // 3DES: Encrypt-Decrypt-Encrypt
+        des_encrypt_block(input_block, key1, temp1);    // Encrypt with K1
+        des_encrypt_block(temp1, key2, temp2);         // Decrypt with K2 (simulated)
+        des_encrypt_block(temp2, key3, &ciphertext[i]); // Encrypt with K3
+
+        // Update prev_block for next round
+        memcpy(prev_block, &ciphertext[i], BLOCK_SIZE);
+    }
+}
+
+// Utility to print bytes in hex
+void print_hex(unsigned char *data, int length) {
+    for (int i = 0; i < length; i++) {
+        printf("%02X ", data[i]);
+    }
+    printf("\n");
+}
+
+int main() {
+    unsigned char plaintext[16] = "ABCDEFGH1234567"; // 16 bytes = 2 blocks
+    unsigned char key1[BLOCK_SIZE] = {0x01,0x23,0x45,0x67,0x89,0xAB,0xCD,0xEF};
+    unsigned char key2[BLOCK_SIZE] = {0xFE,0xDC,0xBA,0x98,0x76,0x54,0x32,0x10};
+    unsigned char key3[BLOCK_SIZE] = {0x11,0x22,0x33,0x44,0x55,0x66,0x77,0x88};
+    unsigned char iv[BLOCK_SIZE] = {0x00};  // All zero IV for demo
+    unsigned char ciphertext[16];
+
+    printf("Plaintext: %s\n", plaintext);
+
+    triple_des_cbc_encrypt(plaintext, 16, key1, key2, key3, iv, ciphertext);
+
+    printf("Ciphertext (hex): ");
+    print_hex(ciphertext, 16);
+
+    return 0;
+}
