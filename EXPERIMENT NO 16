@@ -1,0 +1,97 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+
+#define MAX_TEXT 10000
+#define ALPHABET_SIZE 26
+
+// English letter frequency order (most to least frequent)
+const char *english_freq = "ETAOINSHRDLCUMWFGYPBVKJXQZ";
+
+// Alternative frequency orders (to generate top N plaintexts with slight variations)
+const char *freq_variants[] = {
+    "ETAOINSHRDLCUMWFGYPBVKJXQZ",
+    "ETAOINSHRDLUMCFGWYPBVKJXQZ",
+    "ETAOINSHRDLUMWCFGYPBVKJXQZ",
+    "ETAOINSHRDLCUMWFGYPBVXKJQZ",
+    "ETAOINSHRDLUMWFGCPYBVKJXQZ",
+    "ETAOINSHRDLCUMFWGYPBVKJXQZ",
+    "ETAOINSHRDLUMWFGYPBVKJXZQ",
+    "ETAOINSHRDLUMWFGYPCVBKJXQZ",
+    "ETAOINSHRDLUMWFGYPCBVKJXZQ",
+    "ETAOINSHRDLUMWFGYPCBVJKXQZ"
+};
+
+typedef struct {
+    char letter;
+    int count;
+} LetterFreq;
+
+int cmp_count(const void *a, const void *b) {
+    LetterFreq *fa = (LetterFreq *)a;
+    LetterFreq *fb = (LetterFreq *)b;
+    return fb->count - fa->count;  // Descending order
+}
+
+void analyze_frequency(const char *text, LetterFreq freq[]) {
+    for (int i = 0; i < ALPHABET_SIZE; i++) {
+        freq[i].letter = 'A' + i;
+        freq[i].count = 0;
+    }
+
+    for (const char *p = text; *p; p++) {
+        if (isalpha(*p)) {
+            freq[toupper(*p) - 'A'].count++;
+        }
+    }
+
+    qsort(freq, ALPHABET_SIZE, sizeof(LetterFreq), cmp_count);
+}
+
+void generate_plaintext(const char *cipher, LetterFreq freq[], const char *freq_map, char *output) {
+    char map[ALPHABET_SIZE];
+    for (int i = 0; i < ALPHABET_SIZE; i++) {
+        map[freq[i].letter - 'A'] = freq_map[i];
+    }
+
+    for (int i = 0; cipher[i]; i++) {
+        if (isalpha(cipher[i])) {
+            char upper = toupper(cipher[i]);
+            char plain = map[upper - 'A'];
+            output[i] = isupper(cipher[i]) ? plain : tolower(plain);
+        } else {
+            output[i] = cipher[i];
+        }
+    }
+    output[strlen(cipher)] = '\0';
+}
+
+int main() {
+    char cipher[MAX_TEXT];
+    int topN;
+
+    printf("Enter the ciphertext (end with ~ on a new line):\n");
+    char line[512];
+    cipher[0] = '\0';
+    while (fgets(line, sizeof(line), stdin)) {
+        if (line[0] == '~') break;
+        strcat(cipher, line);
+    }
+
+    printf("How many top possible plaintexts would you like? ");
+    scanf("%d", &topN);
+    if (topN > 10) topN = 10; // We have only 10 variants defined
+
+    LetterFreq freq[ALPHABET_SIZE];
+    analyze_frequency(cipher, freq);
+
+    printf("\n===== Possible plaintexts =====\n");
+    for (int i = 0; i < topN; i++) {
+        char output[MAX_TEXT];
+        generate_plaintext(cipher, freq, freq_variants[i], output);
+        printf("\n[%d]\n%s\n", i + 1, output);
+    }
+
+    return 0;
+}
