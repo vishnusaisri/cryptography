@@ -1,0 +1,89 @@
+#include <stdio.h>
+
+// Compute GCD
+int gcd(int a, int b) {
+    while (b != 0) {
+        int t = b;
+        b = a % b;
+        a = t;
+    }
+    return a;
+}
+
+// Extended Euclidean algorithm
+int extended_gcd(int a, int b, int *x, int *y) {
+    if (a == 0) {
+        *x = 0; *y = 1;
+        return b;
+    }
+    int x1, y1;
+    int g = extended_gcd(b % a, a, &x1, &y1);
+    *x = y1 - (b / a) * x1;
+    *y = x1;
+    return g;
+}
+
+// Find modular inverse
+int mod_inverse(int e, int phi) {
+    int x, y;
+    int g = extended_gcd(e, phi, &x, &y);
+    if (g != 1) return -1;
+    return (x % phi + phi) % phi;
+}
+
+int main() {
+    int e = 31;
+    int d = 3371; // Assume Bob's d leaked
+    int n = 3599;
+
+    // We know e * d ≡ 1 mod phi(n)
+    // Compute phi(n)
+    int k = 1;
+    int phi;
+    while (1) {
+        int ed_minus_1 = e * d - k;
+        if (ed_minus_1 % e == 0) {
+            k++;
+            continue;
+        }
+        if (ed_minus_1 % (e) == 0) {
+            k++;
+            continue;
+        }
+        if ((e * d - 1) % k == 0) {
+            phi = (e * d - 1) / k;
+            if ((e * d - 1) % phi == 0) {
+                break;
+            }
+        }
+        k++;
+    }
+
+    printf("From leaked d, computed phi(n) = %d\n", phi);
+    printf("Now attacker can factor n (p and q) using phi(n) and n.\n");
+
+    // Factor n knowing phi
+    // n = pq
+    // phi = (p-1)*(q-1) = pq - (p + q) + 1 = n - (p + q) + 1
+    // (p + q) = n - phi + 1
+    int sum_pq = n - phi + 1;
+
+    // Solve quadratic: x^2 - sum_pq*x + n = 0
+    int discriminant = sum_pq * sum_pq - 4 * n;
+    int sqrt_disc = 0;
+    for (int i = 0; i * i <= discriminant; i++) {
+        if (i * i == discriminant) {
+            sqrt_disc = i;
+            break;
+        }
+    }
+
+    int p = (sum_pq + sqrt_disc) / 2;
+    int q = (sum_pq - sqrt_disc) / 2;
+
+    printf("Recovered primes: p = %d, q = %d\n", p, q);
+
+    printf("Conclusion: Just changing e and d without changing n is not safe.\n");
+
+    return 0;
+}
