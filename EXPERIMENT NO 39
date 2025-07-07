@@ -1,0 +1,77 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+
+// English frequency order (common to rare)
+const char english_order[] = "ETAOINSHRDLUCMWFGYPBVKJXQZ";
+
+// Count letter frequencies
+void compute_freq(const char *text, int freq[26]) {
+    for (int i = 0; i < 26; i++)
+        freq[i] = 0;
+
+    for (int i = 0; text[i] != '\0'; i++) {
+        if (isalpha(text[i])) {
+            char upper = toupper(text[i]);
+            freq[upper - 'A']++;
+        }
+    }
+}
+
+// Find index of most frequent letter in ciphertext
+int find_most_frequent(int freq[26]) {
+    int max = 0;
+    int idx = 0;
+    for (int i = 0; i < 26; i++) {
+        if (freq[i] > max) {
+            max = freq[i];
+            idx = i;
+        }
+    }
+    return idx;
+}
+
+// Decrypt with a given key
+void decrypt(const char *cipher, char *plain, int key) {
+    for (int i = 0; cipher[i] != '\0'; i++) {
+        if (isalpha(cipher[i])) {
+            char base = isupper(cipher[i]) ? 'A' : 'a';
+            plain[i] = ((toupper(cipher[i]) - 'A' - key + 26) % 26) + base;
+        } else {
+            plain[i] = cipher[i];
+        }
+    }
+    plain[strlen(cipher)] = '\0';
+}
+
+int main() {
+    char cipher[5000];
+    int topN;
+
+    printf("Enter ciphertext:\n");
+    fgets(cipher, sizeof(cipher), stdin);
+    cipher[strcspn(cipher, "\n")] = '\0';  // Remove newline
+
+    printf("How many top guesses would you like? ");
+    scanf("%d", &topN);
+
+    int freq[26];
+    compute_freq(cipher, freq);
+
+    int most_freq_idx = find_most_frequent(freq);
+    char most_freq_char = 'A' + most_freq_idx;
+
+    for (int i = 0; i < topN && i < strlen(english_order); i++) {
+        char assumed = english_order[i];
+        int key = (most_freq_char - assumed + 26) % 26;
+
+        char plain[5000];
+        decrypt(cipher, plain, key);
+
+        printf("\nGuess #%d (key = %d, assuming '%c' -> '%c'):\n%s\n", 
+               i + 1, key, most_freq_char, assumed, plain);
+    }
+
+    return 0;
+}
