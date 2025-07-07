@@ -1,0 +1,91 @@
+#include <stdio.h>
+#include <stdint.h>
+
+// S-DES Parameters
+// Permutation functions and S-boxes are simplified for illustration
+// In practice, implement full S-DES spec as per textbook
+
+uint8_t permute(uint8_t in, int p[], int n) {
+    uint8_t out = 0;
+    for(int i=0; i<n; i++) {
+        out <<= 1;
+        out |= (in >> (8 - p[i])) & 1;
+    }
+    return out;
+}
+
+// Example S-DES f-function (placeholder — fill with real S-DES logic)
+uint8_t sdes_encrypt_block(uint8_t plaintext, uint16_t key) {
+    // Simple XOR for demo purposes (replace with real S-DES rounds)
+    return plaintext ^ (key & 0xFF);
+}
+
+uint8_t sdes_decrypt_block(uint8_t ciphertext, uint16_t key) {
+    // Since XOR is symmetric
+    return ciphertext ^ (key & 0xFF);
+}
+
+// CBC mode encrypt
+void cbc_encrypt(uint8_t *plaintext, uint8_t *ciphertext, int len, uint16_t key, uint8_t iv) {
+    uint8_t prev = iv;
+    for(int i=0; i<len; i++) {
+        uint8_t input = plaintext[i] ^ prev;
+        ciphertext[i] = sdes_encrypt_block(input, key);
+        prev = ciphertext[i];
+    }
+}
+
+// CBC mode decrypt
+void cbc_decrypt(uint8_t *ciphertext, uint8_t *plaintext, int len, uint16_t key, uint8_t iv) {
+    uint8_t prev = iv;
+    for(int i=0; i<len; i++) {
+        uint8_t decrypted = sdes_decrypt_block(ciphertext[i], key);
+        plaintext[i] = decrypted ^ prev;
+        prev = ciphertext[i];
+    }
+}
+
+// Utility to print 8-bit value in binary
+void print_binary(uint8_t val) {
+    for(int i=7; i>=0; i--) {
+        printf("%d", (val >> i) & 1);
+    }
+}
+
+int main() {
+    // Given test data
+    uint8_t iv = 0b10101010;
+    uint16_t key = 0b0111111101;  // 10-bit key for S-DES
+    uint8_t plaintext[2] = {0b00000001, 0b00100011};
+    uint8_t ciphertext[2];
+    uint8_t decrypted[2];
+
+    printf("Original Plaintext:\n");
+    for(int i=0; i<2; i++) {
+        print_binary(plaintext[i]);
+        printf(" ");
+    }
+    printf("\n");
+
+    // Encrypt
+    cbc_encrypt(plaintext, ciphertext, 2, key, iv);
+
+    printf("Ciphertext:\n");
+    for(int i=0; i<2; i++) {
+        print_binary(ciphertext[i]);
+        printf(" ");
+    }
+    printf("\n");
+
+    // Decrypt
+    cbc_decrypt(ciphertext, decrypted, 2, key, iv);
+
+    printf("Decrypted Plaintext:\n");
+    for(int i=0; i<2; i++) {
+        print_binary(decrypted[i]);
+        printf(" ");
+    }
+    printf("\n");
+
+    return 0;
+}
