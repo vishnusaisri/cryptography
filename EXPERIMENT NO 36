@@ -1,0 +1,90 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <ctype.h>
+#include <string.h>  // Added this for strlen
+
+// Function to compute GCD using Euclidean algorithm
+int gcd(int a, int b) {
+    while (b != 0) {
+        int t = b;
+        b = a % b;
+        a = t;
+    }
+    return a;
+}
+
+// Function to compute modular inverse of a mod 26
+int mod_inverse(int a) {
+    a = a % 26;
+    for (int x = 1; x < 26; x++) {
+        if ((a * x) % 26 == 1) {
+            return x;
+        }
+    }
+    return -1;  // No modular inverse
+}
+
+// Function to encrypt
+char encrypt_char(char p, int a, int b) {
+    if (isalpha(p)) {
+        char base = isupper(p) ? 'A' : 'a';
+        int val = p - base;
+        int c = (a * val + b) % 26;
+        return c + base;
+    } else {
+        return p;  // Leave non-letters unchanged
+    }
+}
+
+// Function to decrypt
+char decrypt_char(char c, int a_inv, int b) {
+    if (isalpha(c)) {
+        char base = isupper(c) ? 'A' : 'a';
+        int val = c - base;
+        int p = (a_inv * (val - b + 26)) % 26;  // +26 to handle negative
+        return p + base;
+    } else {
+        return c;
+    }
+}
+
+int main() {
+    char plaintext[1024], ciphertext[1024], decrypted[1024];
+    int a, b;
+
+    printf("Enter values for a and b (a must be coprime with 26): ");
+    scanf("%d %d", &a, &b);
+    getchar();  // consume newline
+
+    if (gcd(a, 26) != 1) {
+        printf("Error: 'a' must be coprime with 26 for the cipher to be one-to-one.\n");
+        return 1;
+    }
+
+    printf("Enter plaintext: ");
+    fgets(plaintext, sizeof(plaintext), stdin);
+
+    // Encrypt
+    for (int i = 0; plaintext[i] != '\0'; i++) {
+        ciphertext[i] = encrypt_char(plaintext[i], a, b);
+    }
+    ciphertext[strlen(plaintext)] = '\0';
+
+    printf("Encrypted text: %s\n", ciphertext);
+
+    // Decrypt
+    int a_inv = mod_inverse(a);
+    if (a_inv == -1) {
+        printf("Error: No modular inverse exists for a = %d mod 26\n", a);
+        return 1;
+    }
+
+    for (int i = 0; ciphertext[i] != '\0'; i++) {
+        decrypted[i] = decrypt_char(ciphertext[i], a_inv, b);
+    }
+    decrypted[strlen(ciphertext)] = '\0';
+
+    printf("Decrypted text: %s\n", decrypted);
+
+    return 0;
+}
