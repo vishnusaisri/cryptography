@@ -1,0 +1,123 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+// Compute determinant of 2x2 matrix mod 26
+int determinant(int m[2][2]) {
+    return (m[0][0]*m[1][1] - m[0][1]*m[1][0]) % 26;
+}
+
+// Compute modular inverse
+int mod_inverse(int a, int m) {
+    a = a % m;
+    for (int x = 1; x < m; x++) {
+        if ((a * x) % m == 1)
+            return x;
+    }
+    return -1;
+}
+
+// Compute inverse matrix mod 26
+void matrix_inverse(int m[2][2], int inv[2][2]) {
+    int det = determinant(m);
+    if (det < 0) det += 26;
+
+    int det_inv = mod_inverse(det, 26);
+    if (det_inv == -1) {
+        printf("Matrix not invertible modulo 26.\n");
+        exit(1);
+    }
+
+    inv[0][0] =  (m[1][1] * det_inv) % 26;
+    inv[0][1] = (-m[0][1] * det_inv) % 26;
+    inv[1][0] = (-m[1][0] * det_inv) % 26;
+    inv[1][1] =  (m[0][0] * det_inv) % 26;
+
+    // Handle negative mod
+    for (int i = 0; i < 2; i++)
+        for (int j = 0; j < 2; j++)
+            if (inv[i][j] < 0) inv[i][j] += 26;
+}
+
+// Encrypt 2-letter block
+void encrypt(int K[2][2], int p[2], int c[2]) {
+    c[0] = (K[0][0]*p[0] + K[0][1]*p[1]) % 26;
+    c[1] = (K[1][0]*p[0] + K[1][1]*p[1]) % 26;
+}
+
+// Decrypt 2-letter block
+void decrypt(int Kinv[2][2], int c[2], int p[2]) {
+    p[0] = (Kinv[0][0]*c[0] + Kinv[0][1]*c[1]) % 26;
+    p[1] = (Kinv[1][0]*c[0] + Kinv[1][1]*c[1]) % 26;
+}
+
+// Print 2x2 matrix
+void print_matrix(int m[2][2]) {
+    printf("[[%d %d]\n [%d %d]]\n", m[0][0], m[0][1], m[1][0], m[1][1]);
+}
+
+// Helper: Convert char to int (A=0,...Z=25)
+int ctov(char c) {
+    return c - 'A';
+}
+
+// Helper: Convert int to char
+char vtoc(int v) {
+    return 'A' + v;
+}
+
+int main() {
+    // Example chosen plaintexts
+    char pt1[3], pt2[3];
+    char ct1[3], ct2[3];
+
+    printf("Enter 2-letter chosen plaintext 1 (A-Z): ");
+    scanf("%2s", pt1);
+    printf("Enter ciphertext for plaintext 1: ");
+    scanf("%2s", ct1);
+
+    printf("Enter 2-letter chosen plaintext 2 (A-Z): ");
+    scanf("%2s", pt2);
+    printf("Enter ciphertext for plaintext 2: ");
+    scanf("%2s", ct2);
+
+    int P[2][2] = {
+        { ctov(pt1[0]), ctov(pt1[1]) },
+        { ctov(pt2[0]), ctov(pt2[1]) }
+    };
+
+    int C[2][2] = {
+        { ctov(ct1[0]), ctov(ct1[1]) },
+        { ctov(ct2[0]), ctov(ct2[1]) }
+    };
+
+    int Pinv[2][2];
+    matrix_inverse(P, Pinv);
+
+    // Recover key: K = C * P^-1 mod 26
+    int K[2][2];
+    for (int i = 0; i < 2; i++)
+        for (int j = 0; j < 2; j++) {
+            K[i][j] = (C[i][0]*Pinv[0][j] + C[i][1]*Pinv[1][j]) % 26;
+            if (K[i][j] < 0) K[i][j] += 26;
+        }
+
+    printf("\nRecovered key matrix:\n");
+    print_matrix(K);
+
+    // Example decryption
+    char cblock[3];
+    printf("\nEnter 2-letter ciphertext block to decrypt: ");
+    scanf("%2s", cblock);
+
+    int cvec[2] = { ctov(cblock[0]), ctov(cblock[1]) };
+
+    int Kinv[2][2];
+    matrix_inverse(K, Kinv);
+
+    int pvec[2];
+    decrypt(Kinv, cvec, pvec);
+
+    printf("Decrypted block: %c%c\n", vtoc(pvec[0]), vtoc(pvec[1]));
+
+    return 0;
+}
