@@ -1,0 +1,88 @@
+#include <stdio.h>
+#include <string.h>
+
+#define BLOCK_SIZE 8  // 8-byte block
+
+// Mock block cipher: XOR with key
+void encrypt_block(unsigned char *in, unsigned char *key, unsigned char *out) {
+    for (int i = 0; i < BLOCK_SIZE; i++) {
+        out[i] = in[i] ^ key[i];
+    }
+}
+
+// ECB mode encryption
+void ecb_encrypt(unsigned char *plaintext, int length, unsigned char *key, unsigned char *ciphertext) {
+    for (int i = 0; i < length; i += BLOCK_SIZE) {
+        encrypt_block(&plaintext[i], key, &ciphertext[i]);
+    }
+}
+
+// CBC mode encryption
+void cbc_encrypt(unsigned char *plaintext, int length, unsigned char *key, unsigned char *iv, unsigned char *ciphertext) {
+    unsigned char prev[BLOCK_SIZE];
+    memcpy(prev, iv, BLOCK_SIZE);
+
+    for (int i = 0; i < length; i += BLOCK_SIZE) {
+        unsigned char temp[BLOCK_SIZE];
+        for (int j = 0; j < BLOCK_SIZE; j++) {
+            temp[j] = plaintext[i + j] ^ prev[j];
+        }
+        encrypt_block(temp, key, &ciphertext[i]);
+        memcpy(prev, &ciphertext[i], BLOCK_SIZE);
+    }
+}
+
+// CBC mode decryption
+void cbc_decrypt(unsigned char *ciphertext, int length, unsigned char *key, unsigned char *iv, unsigned char *plaintext) {
+    unsigned char prev[BLOCK_SIZE];
+    memcpy(prev, iv, BLOCK_SIZE);
+
+    for (int i = 0; i < length; i += BLOCK_SIZE) {
+        unsigned char temp[BLOCK_SIZE];
+        encrypt_block(&ciphertext[i], key, temp);  // Since encrypt_block is its own inverse (XOR)
+        for (int j = 0; j < BLOCK_SIZE; j++) {
+            plaintext[i + j] = temp[j] ^ prev[j];
+        }
+        memcpy(prev, &ciphertext[i], BLOCK_SIZE);
+    }
+}
+
+// Utility to print hex
+void print_hex(unsigned char *data, int len) {
+    for (int i = 0; i < len; i++) {
+        printf("%02X ", data[i]);
+    }
+    printf("\n");
+}
+
+int main() {
+    unsigned char plaintext[16] = "ABCDEFGH1234567";  // 2 blocks
+    unsigned char key[BLOCK_SIZE] = {0x10,0x20,0x30,0x40,0x50,0x60,0x70,0x80};
+    unsigned char iv[BLOCK_SIZE] = {0};
+
+    unsigned char ct_ecb[16], ct_cbc[16];
+    unsigned char pt_cbc_dec[16];
+
+    printf("Plaintext: %s\n", plaintext);
+
+    ecb_encrypt(plaintext, 16, key, ct_ecb);
+    printf("\nECB Ciphertext:\n");
+    print_hex(ct_ecb, 16);
+
+    cbc_encrypt(plaintext, 16, key, iv, ct_cbc);
+    printf("\nCBC Ciphertext:\n");
+    print_hex(ct_cbc, 16);
+
+    // Simulate transmission error: flip a bit in C1 (CBC)
+    ct_cbc[0] ^= 0x01;  // Flip lowest bit of first byte of C1
+
+    printf("\nCBC Ciphertext with C1 error:\n");
+    print_hex(ct_cbc, 16);
+
+    cbc_decrypt(ct_cbc, 16, key, iv, pt_cbc_dec);
+    printf("\nCBC Decrypted Plaintext with C1 error:\n");
+    print_hex(pt_cbc_dec, 16);
+    printf("As string: %.8s %.8s\n", pt_cbc_dec, pt_cbc_dec + 8);
+
+    return 0;
+}
