@@ -1,0 +1,45 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+// Mock DSA signature: uses random k
+void dsa_sign(const char *msg, int *r, int *s) {
+    int k = rand() % 1000 + 1;  // random k for each signature
+    *r = (msg[0] * k) % 997;    // fake r value
+    *s = (msg[0] + k) % 997;    // fake s value
+}
+
+// Mock RSA signature: deterministic
+int rsa_sign(const char *msg) {
+    return (msg[0] * 123) % 997;  // fake RSA signature
+}
+
+int main() {
+    srand(time(NULL));
+
+    const char *message = "HELLO";
+
+    // DSA: sign twice
+    int dsa_r1, dsa_s1, dsa_r2, dsa_s2;
+    dsa_sign(message, &dsa_r1, &dsa_s1);
+    dsa_sign(message, &dsa_r2, &dsa_s2);
+
+    printf("DSA Signatures for same message:\n");
+    printf("Signature 1: r = %d, s = %d\n", dsa_r1, dsa_s1);
+    printf("Signature 2: r = %d, s = %d\n", dsa_r2, dsa_s2);
+
+    // RSA: sign twice
+    int rsa_sig1 = rsa_sign(message);
+    int rsa_sig2 = rsa_sign(message);
+
+    printf("\nRSA Signatures for same message:\n");
+    printf("Signature 1: %d\n", rsa_sig1);
+    printf("Signature 2: %d\n", rsa_sig2);
+
+    // Implication
+    printf("\nImplication:\n");
+    printf("DSA produces different signatures each time -> harder to replay.\n");
+    printf("RSA produces same signature -> easier for attacker to recognize/replay.\n");
+
+    return 0;
+}
